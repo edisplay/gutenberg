@@ -19,7 +19,7 @@ import memize from 'memize';
 import { Component, Fragment, RawHTML } from '@wordpress/element';
 import { isHorizontalEdge } from '@wordpress/dom';
 import { createBlobURL } from '@wordpress/blob';
-import { BACKSPACE, DELETE, ENTER, LEFT, RIGHT, SPACE } from '@wordpress/keycodes';
+import { BACKSPACE, DELETE, ENTER, LEFT, RIGHT, SPACE, ESCAPE } from '@wordpress/keycodes';
 import { withDispatch, withSelect } from '@wordpress/data';
 import { pasteHandler, children, getBlockTransforms, findTransform } from '@wordpress/blocks';
 import { withInstanceId, withSafeTimeout, compose } from '@wordpress/compose';
@@ -88,6 +88,21 @@ const INSERTION_INPUT_TYPES_TO_IGNORE = new Set( [
 const globalStyle = document.createElement( 'style' );
 
 document.head.appendChild( globalStyle );
+
+/**
+ * To be run after performing an automatic pattern transform, which should be
+ * undoable across RichText instances.
+ */
+function didPattern() {
+	didPattern.state = true;
+
+	setTimeout( () => {
+		document.addEventListener( 'selectionchange', function callback() {
+			didPattern.state = false;
+			document.removeEventListener( 'selectionchange', callback );
+		} );
+	} );
+}
 
 export class RichText extends Component {
 	constructor( { value, onReplace, multiline } ) {
@@ -442,7 +457,13 @@ export class RichText extends Component {
 			change
 		);
 
+		if ( ! transformed ) {
+			didPattern();
+			return;
+		}
+
 		if ( transformed !== change ) {
+			didPattern();
 			this.onCreateUndoLevel();
 			this.onChange( { ...transformed, selectedFormat } );
 		}
@@ -648,6 +669,15 @@ export class RichText extends Component {
 			}
 		}
 
+		if (
+			( keyCode === BACKSPACE || keyCode === ESCAPE ) &&
+			didPattern.state
+		) {
+			event.preventDefault();
+			this.props.undo();
+			return;
+		}
+
 		if ( keyCode === DELETE || keyCode === BACKSPACE ) {
 			const value = this.createRecord();
 			const { replacements, text, start, end } = value;
@@ -731,6 +761,7 @@ export class RichText extends Component {
 				} );
 
 				if ( transformation ) {
+					didPattern();
 					this.props.onReplace( [
 						transformation.transform( { content: text } ),
 					] );
@@ -1219,11 +1250,13 @@ const RichTextContainer = compose( [
 			enterFormattedText,
 			exitFormattedText,
 		} = dispatch( 'core/block-editor' );
+		const { undo } = dispatch( 'core/editor' );
 
 		return {
 			onCreateUndoLevel: __unstableMarkLastChangeAsPersistent,
 			onEnterFormattedText: enterFormattedText,
 			onExitFormattedText: exitFormattedText,
+			undo,
 		};
 	} ),
 	withSafeTimeout,

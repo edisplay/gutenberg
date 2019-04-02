@@ -16,35 +16,6 @@ export function getPatterns( { onReplace, valueToFormat } ) {
 
 	return [
 		( record ) => {
-			if ( ! onReplace ) {
-				return record;
-			}
-
-			const start = getSelectionStart( record );
-			const text = getTextContent( record );
-			const characterBefore = text.slice( start - 1, start );
-
-			if ( ! /\s/.test( characterBefore ) ) {
-				return record;
-			}
-
-			const trimmedTextBefore = text.slice( 0, start ).trim();
-			const transformation = findTransform( prefixTransforms, ( { prefix } ) => {
-				return trimmedTextBefore === prefix;
-			} );
-
-			if ( ! transformation ) {
-				return record;
-			}
-
-			const content = valueToFormat( slice( record, start, text.length ) );
-			const block = transformation.transform( content );
-
-			onReplace( [ block ] );
-
-			return record;
-		},
-		( record ) => {
 			const BACKTICK = '`';
 			const start = getSelectionStart( record );
 			const text = getTextContent( record );
@@ -74,6 +45,33 @@ export function getPatterns( { onReplace, valueToFormat } ) {
 			record = applyFormat( record, { type: 'code' }, startIndex, endIndex );
 
 			return record;
+		},
+		( record ) => {
+			if ( ! onReplace ) {
+				return record;
+			}
+
+			const start = getSelectionStart( record );
+			const text = getTextContent( record );
+			const characterBefore = text.slice( start - 1, start );
+
+			if ( ! /\s/.test( characterBefore ) ) {
+				return record;
+			}
+
+			const trimmedTextBefore = text.slice( 0, start ).trim();
+			const transformation = findTransform( prefixTransforms, ( { prefix } ) => {
+				return trimmedTextBefore === prefix;
+			} );
+
+			if ( ! transformation ) {
+				return record;
+			}
+
+			const content = valueToFormat( slice( record, start, text.length ) );
+			const block = transformation.transform( content );
+
+			onReplace( [ block ] );
 		},
 	];
 }
