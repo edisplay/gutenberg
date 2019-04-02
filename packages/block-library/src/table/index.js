@@ -15,6 +15,11 @@ import { RichText, getColorClassName } from '@wordpress/block-editor';
  */
 import edit from './edit';
 import icon from './icon';
+import metadata from './block.json';
+
+const { name } = metadata;
+
+export { metadata, name };
 
 const tableContentPasteSchema = {
 	tr: {
@@ -79,13 +84,10 @@ function getTableSectionAttributeSchema( section ) {
 	};
 }
 
-export const name = 'core/table';
-
 export const settings = {
 	title: __( 'Table' ),
 	description: __( 'Insert a table — perfect for sharing charts and data.' ),
 	icon,
-	category: 'formatting',
 
 	attributes: {
 		hasFixedLayout: {
