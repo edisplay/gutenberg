@@ -55,6 +55,23 @@ describe( 'List', () => {
 		expect( await getEditedPostContent() ).toMatchSnapshot();
 	} );
 
+	it( 'should undo asterisk transform with backspace', async () => {
+		await clickBlockAppender();
+		await page.keyboard.type( '* ' );
+		await page.keyboard.press( 'Backspace' );
+
+		expect( await getEditedPostContent() ).toMatchSnapshot();
+	} );
+
+	it( 'should not undo asterisk transform with backspace after typing', async () => {
+		await clickBlockAppender();
+		await page.keyboard.type( '* a' );
+		await page.keyboard.press( 'Backspace' );
+		await page.keyboard.press( 'Backspace' );
+
+		expect( await getEditedPostContent() ).toMatchSnapshot();
+	} );
+
 	it( 'can be created by typing "/list"', async () => {
 		// Create a list with the slash block shortcut.
 		await clickBlockAppender();

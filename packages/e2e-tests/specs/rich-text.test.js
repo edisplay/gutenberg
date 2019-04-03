@@ -82,6 +82,35 @@ describe( 'RichText', () => {
 		expect( await getEditedPostContent() ).toMatchSnapshot();
 	} );
 
+	it( 'should undo backtick transform with backspace', async () => {
+		await clickBlockAppender();
+		await page.keyboard.type( '`a`' );
+		await page.keyboard.press( 'Backspace' );
+
+		expect( await getEditedPostContent() ).toMatchSnapshot();
+	} );
+
+	it( 'should not undo backtick transform with backspace after typing', async () => {
+		await clickBlockAppender();
+		await page.keyboard.type( '`a`b' );
+		await page.keyboard.press( 'Backspace' );
+		await page.keyboard.press( 'Backspace' );
+
+		expect( await getEditedPostContent() ).toMatchSnapshot();
+	} );
+
+	it( 'should not undo backtick transform with backspace after selection change', async () => {
+		await clickBlockAppender();
+		await page.keyboard.type( '`a`' );
+		// Move inside format boundary.
+		await page.keyboard.press( 'ArrowLeft' );
+		await page.keyboard.press( 'ArrowLeft' );
+		await page.keyboard.press( 'ArrowRight' );
+		await page.keyboard.press( 'Backspace' );
+
+		expect( await getEditedPostContent() ).toMatchSnapshot();
+	} );
+
 	it( 'should not format text after code backtick', async () => {
 		await clickBlockAppender();
 		await page.keyboard.type( 'A `backtick` and more.' );
